@@ -11,22 +11,22 @@ function App() {
     isSignedIn: false,
     name: '',
     email: '',
-    photoUrl: ''
+    photo: ''
   })
 
   const provider = new firebase.auth.GoogleAuthProvider();
   const handleSignin = () => {
     firebase.auth().signInWithPopup(provider)
       .then((res) => {
-        const { displayName, email, photoUrl } = res.user;
-        const isSignedUser = {
+        const { displayName, email, photoURL } = res.user;
+        const signedInUser = {
           isSignedIn: true,
           name: displayName,
           email: email,
-          photo: photoUrl
+          photo: photoURL
         }
-        setUser(isSignedUser);
-        // console.log(displayName, email, photoUrl);
+        setUser(signedInUser);
+        console.log(res.user);
       })
       .catch((error) => {
         console.log(error);
@@ -44,7 +44,6 @@ function App() {
         }
         setUser(signedOutUser);
       })
-    console.log('signedOut clicked');
   }
   return (
     <div className="App">
@@ -53,10 +52,10 @@ function App() {
           <button onClick={handleSignin}>Sign in</button>
       }
       {
-        user.isSignedUser && <div>
+        user.isSignedIn && <div>
           <p>Welcome, {user.name}</p>
           <p>Your email: {user.email}</p>
-          <img src={user.photoUrl} alt=""></img>
+          <img src={user.photo} alt=""></img>
         </div>
       }
     </div>
