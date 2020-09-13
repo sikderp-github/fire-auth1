@@ -7,6 +7,7 @@ import firebaseConfig from './firebase.config';
 firebase.initializeApp(firebaseConfig);
 
 function App() {
+  const [newUser, setNewUser] = useState(false);
   const [user, setUser] = useState({
     isSignedIn: false,
     name: '',
@@ -15,9 +16,10 @@ function App() {
     photo: ''
   })
 
-  const provider = new firebase.auth.GoogleAuthProvider();
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+  var fbProvider = new firebase.auth.FacebookAuthProvider();
   const handleSignin = () => {
-    firebase.auth().signInWithPopup(provider)
+    firebase.auth().signInWithPopup(googleProvider)
       .then((res) => {
         const { displayName, email, photoURL } = res.user;
         const signedInUser = {
@@ -69,7 +71,7 @@ function App() {
   }
 
   const handleSubmit = (e) => {
-    if (user.email && user.password) {
+    if (user && user.email && user.password) {
       firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
         .then(res => {
           const newUserInfo = { ...user }
@@ -87,13 +89,46 @@ function App() {
     }
     e.preventDefault();
   }
-
+  if (!newUser && user.email && user.password) {
+    firebase.auth().signInWithEmailAndPassword(user.email, user.password)
+      .then(res => {
+        const newUserInfo = { ...user }
+        newUserInfo.error = '';
+        newUserInfo.success = true;
+        setUser(newUserInfo);
+      })
+      .catch(error => {
+        const newUserInfo = { ...user }
+        newUserInfo.error = error.message;
+        newUserInfo.success = false;
+        setUser(newUserInfo)
+      });
+  }
+  const handleFbSignIn = () => {
+    firebase.auth().signInWithPopup(fbProvider)
+      .then(res => {
+        // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+        // var token = res.credential.accessToken;
+        // The signed-in user info.
+        var user = res.user;
+        console.log(user);
+        // ...
+      })
+      .catch(error => {
+        const newUserInfo = { ...user }
+        newUserInfo.error = error.message;
+        newUserInfo.success = false;
+        setUser(newUserInfo)
+      });
+  }
   return (
     <div className="App">
       {
         user.isSignedIn ? <button onClick={handleSignedOut}>Sign out</button> :
           <button onClick={handleSignin}>Sign in</button>
       }
+      <br />
+      <button onClick={handleFbSignIn}>Sign in using Facebook</button>
       {
         user.isSignedIn && <div>
           <p>Welcome, {user.name}</p>
@@ -102,8 +137,11 @@ function App() {
         </div>
       }
       <h1>Our own Authentication</h1>
+
+      <input type="checkbox" name='newUser' onChange={() => setNewUser(!newUser)} id='' />
+      <label htmlFor="newUser">New User sign up</label>
       <form onSubmit={handleSubmit}>
-        <input type="text" name="name" onBlur={handleBlur} placeholder="Your name" />
+        {newUser && <input type="text" name="name" onBlur={handleBlur} placeholder="Your name" />}
         <br />
         <input type="text" name="email" onBlur={handleBlur} placeholder="Type your email" required></input>
         <br />
@@ -114,7 +152,7 @@ function App() {
       <p style={{ color: 'red' }}>{user.error}</p>
 
       {
-        user.success && <p style={{ color: 'green' }}>user created successfully</p>
+        user.success && <p style={{ color: 'green' }}>User {newUser ? 'created' : 'logged in'} successfully</p>
       }
     </div>
   );
