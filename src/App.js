@@ -11,6 +11,7 @@ function App() {
     isSignedIn: false,
     name: '',
     email: '',
+    password: '',
     photo: ''
   })
 
@@ -26,7 +27,7 @@ function App() {
           photo: photoURL
         }
         setUser(signedInUser);
-        console.log(res.user);
+
       })
       .catch((error) => {
         console.log(error);
@@ -40,11 +41,53 @@ function App() {
           isSignedIn: false,
           name: '',
           email: '',
-          photo: ''
+          photo: '',
+          error: '',
+          success: false
         }
         setUser(signedOutUser);
       })
   }
+
+  const handleBlur = (e) => {
+    let isFieldValid = true;
+    if (e.target.name === 'email') {
+      isFieldValid = /\S+@\S+\.\S+/.test(e.target.value);
+
+    }
+    if (e.target.name === 'password') {
+      const isPasswordValid = e.target.value.length > 6;
+      const passwordHasNumber = /\d{1}/.test(e.target.value);
+      isFieldValid = isPasswordValid && passwordHasNumber;
+    }
+    if (isFieldValid) {
+      const newUserInfo = { ...user };
+      newUserInfo[e.target.name] = e.target.value;
+      setUser(newUserInfo);
+
+    }
+  }
+
+  const handleSubmit = (e) => {
+    if (user.email && user.password) {
+      firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
+        .then(res => {
+          const newUserInfo = { ...user }
+          newUserInfo.error = '';
+          newUserInfo.success = true;
+          setUser(newUserInfo);
+        })
+        .catch(error => {
+          const newUserInfo = { ...user }
+          newUserInfo.error = error.message;
+          newUserInfo.success = false;
+          setUser(newUserInfo)
+        });
+
+    }
+    e.preventDefault();
+  }
+
   return (
     <div className="App">
       {
@@ -57,6 +100,21 @@ function App() {
           <p>Your email: {user.email}</p>
           <img src={user.photo} alt=""></img>
         </div>
+      }
+      <h1>Our own Authentication</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" name="name" onBlur={handleBlur} placeholder="Your name" />
+        <br />
+        <input type="text" name="email" onBlur={handleBlur} placeholder="Type your email" required></input>
+        <br />
+        <input type="password" name="password" onBlur={handleBlur} placeholder="Enter your password" required></input>
+        <br />
+        <input type="submit" value='submit' />
+      </form>
+      <p style={{ color: 'red' }}>{user.error}</p>
+
+      {
+        user.success && <p style={{ color: 'green' }}>user created successfully</p>
       }
     </div>
   );
