@@ -18,7 +18,7 @@ function App() {
 
   const googleProvider = new firebase.auth.GoogleAuthProvider();
   var fbProvider = new firebase.auth.FacebookAuthProvider();
-  const handleSignin = () => {
+  const handleSignIn = () => {
     firebase.auth().signInWithPopup(googleProvider)
       .then((res) => {
         const { displayName, email, photoURL } = res.user;
@@ -36,7 +36,7 @@ function App() {
         console.log(error.message);
       })
   }
-  const handleSignedOut = () => {
+  const handleSignOut = () => {
     firebase.auth().signOut()
       .then(res => {
         const signedOutUser = {
@@ -71,8 +71,24 @@ function App() {
   }
 
   const handleSubmit = (e) => {
-    if (user && user.email && user.password) {
+    if (newUser && user.email && user.password) {
       firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
+        .then(res => {
+          const newUserInfo = { ...user }
+          newUserInfo.error = '';
+          newUserInfo.success = true;
+          setUser(newUserInfo);
+          updateUserName(user.name);
+        })
+        .catch(error => {
+          const newUserInfo = { ...user }
+          newUserInfo.error = error.message;
+          newUserInfo.success = false;
+          setUser(newUserInfo)
+        });
+    }
+    if (!newUser && user.email && user.password) {
+      firebase.auth().signInWithEmailAndPassword(user.email, user.password)
         .then(res => {
           const newUserInfo = { ...user }
           newUserInfo.error = '';
@@ -85,31 +101,13 @@ function App() {
           newUserInfo.success = false;
           setUser(newUserInfo)
         });
-
     }
     e.preventDefault();
   }
-  if (!newUser && user.email && user.password) {
-    firebase.auth().signInWithEmailAndPassword(user.email, user.password)
-      .then(res => {
-        const newUserInfo = { ...user }
-        newUserInfo.error = '';
-        newUserInfo.success = true;
-        setUser(newUserInfo);
-      })
-      .catch(error => {
-        const newUserInfo = { ...user }
-        newUserInfo.error = error.message;
-        newUserInfo.success = false;
-        setUser(newUserInfo)
-      });
-  }
+
   const handleFbSignIn = () => {
     firebase.auth().signInWithPopup(fbProvider)
       .then(res => {
-        // This gives you a Facebook Access Token. You can use it to access the Facebook API.
-        // var token = res.credential.accessToken;
-        // The signed-in user info.
         var user = res.user;
         console.log(user);
         // ...
@@ -121,11 +119,24 @@ function App() {
         setUser(newUserInfo)
       });
   }
+
+  const updateUserName = name => {
+    const user = firebase.auth().currentUser;
+
+    user.updateProfile({
+      displayName: name
+
+    }).then(function () {
+      console.log('user updated')
+    }).catch(function (error) {
+      console.log(error)
+    });
+  }
   return (
     <div className="App">
       {
-        user.isSignedIn ? <button onClick={handleSignedOut}>Sign out</button> :
-          <button onClick={handleSignin}>Sign in</button>
+        user.isSignedIn ? <button onClick={handleSignOut}>Sign out</button> :
+          <button onClick={handleSignIn}>Sign in</button>
       }
       <br />
       <button onClick={handleFbSignIn}>Sign in using Facebook</button>
@@ -137,7 +148,6 @@ function App() {
         </div>
       }
       <h1>Our own Authentication</h1>
-
       <input type="checkbox" name='newUser' onChange={() => setNewUser(!newUser)} id='' />
       <label htmlFor="newUser">New User sign up</label>
       <form onSubmit={handleSubmit}>
